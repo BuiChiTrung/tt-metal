@@ -31,6 +31,7 @@
 #include "ttnn/operations/kv_cache/kv_cache_pybind.hpp"
 #include "ttnn/operations/loss/loss_pybind.hpp"
 #include "ttnn/operations/matmul/matmul_pybind.hpp"
+#include "ttnn/operations/moreh/moreh_adamw/moreh_adamw_pybind.hpp"
 #include "ttnn/operations/normalization/normalization_pybind.hpp"
 #include "ttnn/operations/pool/avgpool/avg_pool_pybind.hpp"
 #include "ttnn/operations/pool/downsample/downsample_pybind.hpp"
@@ -47,6 +48,9 @@ namespace ttnn {
 namespace operations {
 
 void py_module(py::module& module) {
+    auto m_adamw = module.def_submodule("adamw", "adamw of operations");
+    adamw::py_module(m_adamw);
+
     auto m_core = module.def_submodule("core", "core operations");
     core::py_module_types(m_core);
     core::py_module(m_core);
