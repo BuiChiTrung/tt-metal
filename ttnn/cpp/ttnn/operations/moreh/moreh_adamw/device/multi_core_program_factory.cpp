@@ -35,7 +35,7 @@ MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation
     const Tensor& exp_avg_out = tensor_args.exp_avg_out;
     const Tensor& exp_avg_sq_out = tensor_args.exp_avg_sq_out;
     const std::optional<const Tensor> max_exp_avg_sq_out = tensor_args.max_exp_avg_sq_out;
-    const DeviceComputeKernelConfig compute_kernel_config = operation_attributes.compute_kernel_config;
+    std::optional<const DeviceComputeKernelConfig> compute_kernel_config = operation_attributes.compute_kernel_config;
 
     Program program{};
 
@@ -50,8 +50,10 @@ MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation
         split_work_to_cores(grid, num_units);
 
     auto arch = param_in.device()->arch();
+    auto compute_kernel_config_val =
+        init_device_compute_kernel_config(device->arch(), compute_kernel_config, MathFidelity::HiFi4);
     auto [math_fidelity, math_approx_mode, fp32_dest_acc_en, packer_l1_acc] =
-        get_compute_kernel_config_args(arch, compute_kernel_config);
+        get_compute_kernel_config_args(arch, compute_kernel_config_val);
 
     ////////////////////////////////////////////////////////////////////////////
     //                         CircularBuffer Setup

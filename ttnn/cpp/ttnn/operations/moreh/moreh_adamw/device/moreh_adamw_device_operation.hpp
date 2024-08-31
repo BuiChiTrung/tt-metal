@@ -27,7 +27,7 @@ struct MorehAdamWDeviceOperation {
         uint32_t step;
         bool amsgrad;
         const MemoryConfig mem_config;
-        const DeviceComputeKernelConfig compute_kernel_config;
+        std::optional<const DeviceComputeKernelConfig> compute_kernel_config;
     };
 
     // Define the tensor arguments. This is it to store all tensors passed in and/or out of the operation
@@ -127,7 +127,7 @@ struct MorehAdamWDeviceOperation {
         const std::optional<const Tensor> max_exp_avg_sq_out,
         // CHECK if memconfg, compute kernel config require
         const MemoryConfig& mem_config,
-        const DeviceComputeKernelConfig compute_kernel_config);
+        std::optional<const DeviceComputeKernelConfig> compute_kernel_config);
 
     // Optional methods
 

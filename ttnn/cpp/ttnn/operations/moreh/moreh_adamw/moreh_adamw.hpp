@@ -35,7 +35,7 @@ struct MorehAdamw {
         const std::optional<const Tensor> max_exp_avg_sq_out,
         // CHECK if memconfg, compute kernel config require
         const MemoryConfig& mem_config,
-        const DeviceComputeKernelConfig compute_kernel_config) {
+        std::optional<const DeviceComputeKernelConfig> compute_kernel_config) {
         return ttnn::prim::adamw(
             param_in,
             grad,

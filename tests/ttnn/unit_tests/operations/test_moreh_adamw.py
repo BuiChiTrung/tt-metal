@@ -152,6 +152,9 @@ def run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, 
     logger.debug(f"Output pcc={out}")
     whole_passing &= passing
 
+    print("CPU: ", model.weight)
+    print("NPU: ", param_result)
+
     passing, out = comp_allclose_and_pcc(cpu_exp_avg_result, exp_avg_result, pcc=pcc, rtol=rtol, atol=atol)
     logger.debug(f"Out passing (exp_avg)={passing}")
     logger.debug(f"Output pcc={out}")
@@ -176,7 +179,7 @@ def run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, 
 @pytest.mark.parametrize(
     "shape",
     [
-        # [32, 32],  # single
+        [32, 32],  # single
         [4, 3, 2, 6, 64, 64],  # multi tile
     ],
 )
@@ -186,43 +189,43 @@ def run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, 
 @pytest.mark.parametrize("weight_decay", [0.3])
 @pytest.mark.parametrize("amsgrad", [True, False])
 @pytest.mark.parametrize("step", [8])
-@pytest.mark.parametrize("compute_kernel_options", compute_kernel_options, ids=compute_kernel_ids)
-def test_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, compute_kernel_options):
+def test_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device):
     torch.manual_seed(0)
 
+    run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device)
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [[32, 32]],  # single
+)
+@pytest.mark.parametrize("lr", [1e-2])
+@pytest.mark.parametrize("betas", [[0.5, 0.555]])
+@pytest.mark.parametrize("eps", [1e-08])
+@pytest.mark.parametrize("weight_decay", [0.3])
+@pytest.mark.parametrize("amsgrad", [True, False])
+@pytest.mark.parametrize("step", [8])
+@pytest.mark.parametrize("compute_kernel_options", compute_kernel_options, ids=compute_kernel_ids)
+def test_moreh_adamw_callback(
+    shape, lr, betas, eps, weight_decay, amsgrad, step, device, use_program_cache, compute_kernel_options
+):
+    torch.manual_seed(0)
+    for _ in range(2):
+        run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, compute_kernel_options)
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [[32, 32]],  # single
+)
+@pytest.mark.parametrize("lr", [1e-2])
+@pytest.mark.parametrize("betas", [[0.5, 0.555]])
+@pytest.mark.parametrize("eps", [1e-08])
+@pytest.mark.parametrize("weight_decay", [0.3])
+@pytest.mark.parametrize("amsgrad", [True, False])
+@pytest.mark.parametrize("step", [8])
+def test_moreh_adamw_compute_kernel_options(
+    shape, lr, betas, eps, weight_decay, amsgrad, step, compute_kernel_options, device
+):
+    torch.manual_seed(0)
     run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, compute_kernel_options)
-
-
-# @pytest.mark.parametrize(
-#     "shape",
-#     [[32, 32]],  # single
-# )
-# @pytest.mark.parametrize("lr", [1e-2])
-# @pytest.mark.parametrize("betas", [[0.5, 0.555]])
-# @pytest.mark.parametrize("eps", [1e-08])
-# @pytest.mark.parametrize("weight_decay", [0.3])
-# @pytest.mark.parametrize("amsgrad", [True, False])
-# @pytest.mark.parametrize("step", [8])
-# @pytest.mark.parametrize("compute_kernel_options", compute_kernel_options, ids=compute_kernel_ids)
-# def test_moreh_adamw_callback(shape, lr, betas, eps, weight_decay, amsgrad, step, device, use_program_cache, compute_kernel_options):
-#     torch.manual_seed(0)
-#     for _ in range(2):
-#         run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, compute_kernel_options)
-
-
-# @pytest.mark.parametrize(
-#     "shape",
-#     [[32, 32]],  # single
-# )
-# @pytest.mark.parametrize("lr", [1e-2])
-# @pytest.mark.parametrize("betas", [[0.5, 0.555]])
-# @pytest.mark.parametrize("eps", [1e-08])
-# @pytest.mark.parametrize("weight_decay", [0.3])
-# @pytest.mark.parametrize("amsgrad", [True, False])
-# @pytest.mark.parametrize("step", [8])
-# @pytest.mark.parametrize("compute_kernel_options", compute_kernel_options, ids=compute_kernel_ids)
-# def test_moreh_adamw_compute_kernel_options(
-#     shape, lr, betas, eps, weight_decay, amsgrad, step, compute_kernel_options, device
-# ):
-#     torch.manual_seed(0)
-#     run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, compute_kernel_options)

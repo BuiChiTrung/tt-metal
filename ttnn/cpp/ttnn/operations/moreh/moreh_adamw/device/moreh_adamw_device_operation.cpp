@@ -6,42 +6,6 @@
 
 namespace ttnn::operations::adamw {
 
-// MorehAdamWDeviceOperationTest::program_factory_t MorehAdamWDeviceOperationTest::select_program_factory(
-//     const operation_attributes_t& operation_attributes, const tensor_args_t& tensor_args) {
-//     bool some_condition_based_on_operation_attributes_and_or_tensor_args = true;
-//     if (some_condition_based_on_operation_attributes_and_or_tensor_args) {
-//         return SingleCore{};
-//     }
-//     return MultiCore{};
-// }
-
-// void MorehAdamWDeviceOperationTest::validate_on_program_cache_miss(
-//     const operation_attributes_t& attributes, const tensor_args_t& tensor_args) {}
-
-// void MorehAdamWDeviceOperationTest::validate_on_program_cache_hit(
-//     const operation_attributes_t& attributes, const tensor_args_t& tensor_args) {}
-
-// MorehAdamWDeviceOperationTest::shape_return_value_t MorehAdamWDeviceOperationTest::compute_output_shapes(
-//     const operation_attributes_t&, const tensor_args_t& tensor_args) {
-//     return tensor_args.input_tensor.tensor_attributes->shape;
-// }
-
-// MorehAdamWDeviceOperationTest::tensor_return_value_t MorehAdamWDeviceOperationTest::create_output_tensors(
-//     const operation_attributes_t& operation_attributes, const tensor_args_t& tensor_args) {
-//     auto output_shape = compute_output_shapes(operation_attributes, tensor_args);
-//     const auto& input_tensor = tensor_args.input_tensor;
-//     return create_device_tensor(
-//         output_shape,
-//         input_tensor.tensor_attributes->dtype,
-//         input_tensor.tensor_attributes->layout,
-//         input_tensor.device());
-// }
-
-// std::tuple<MorehAdamWDeviceOperationTest::operation_attributes_t, MorehAdamWDeviceOperationTest::tensor_args_t>
-// MorehAdamWDeviceOperationTest::invoke(const Tensor& input_tensor) {
-//     return {operation_attributes_t{true, 42}, tensor_args_t{input_tensor}};
-// }
-
 MorehAdamWDeviceOperation::program_factory_t MorehAdamWDeviceOperation::select_program_factory(
     const operation_attributes_t& operation_attributes, const tensor_args_t& tensor_args) {
     return MultiCore{};
@@ -110,7 +74,7 @@ MorehAdamWDeviceOperation::invoke(
     const std::optional<const Tensor> max_exp_avg_sq_out,
     // CHECK if memconfg, compute kernel config require
     const MemoryConfig& mem_config,
-    const DeviceComputeKernelConfig compute_kernel_config) {
+    std::optional<const DeviceComputeKernelConfig> compute_kernel_config) {
     return {
         operation_attributes_t{lr, beta1, beta2, eps, weight_decay, step, amsgrad, mem_config, compute_kernel_config},
         tensor_args_t{
