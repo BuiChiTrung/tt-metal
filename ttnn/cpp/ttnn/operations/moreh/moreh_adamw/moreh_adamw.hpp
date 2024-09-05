@@ -4,7 +4,9 @@
 
 #pragma once
 
-#include "device/moreh_adamw_device_operation.hpp"
+#include "ttnn/decorators.hpp"
+#include "ttnn/operations/core/compute_kernel/compute_kernel_config.hpp"
+#include "ttnn/tensor/tensor.hpp"
 
 namespace ttnn::operations::moreh::moreh_adamw {
 
@@ -33,31 +35,12 @@ struct MorehAdamw {
         const std::optional<const Tensor> exp_avg_sq_out,
         const std::optional<const Tensor> max_exp_avg_sq_out,
         const MemoryConfig& mem_config,
-        std::optional<const DeviceComputeKernelConfig> compute_kernel_config) {
-        return ttnn::prim::moreh_adamw(
-            param_in,
-            grad,
-            exp_avg_in,
-            exp_avg_sq_in,
-            lr,
-            beta1,
-            beta2,
-            eps,
-            weight_decay,
-            step,
-            amsgrad,
-            max_exp_avg_sq_in,
-            param_out,
-            exp_avg_out,
-            exp_avg_sq_out,
-            max_exp_avg_sq_out,
-            mem_config,
-            compute_kernel_config);
-    }
+        std::optional<const DeviceComputeKernelConfig> compute_kernel_config);
 };
 
 }  // namespace ttnn::operations::moreh::moreh_adamw
 
 namespace ttnn {
-constexpr auto moreh_adamw = ttnn::register_operation<"ttnn::moreh_adamw", operations::moreh::moreh_adamw::MorehAdamw>();
+constexpr auto moreh_adamw =
+    ttnn::register_operation<"ttnn::moreh_adamw", operations::moreh::moreh_adamw::MorehAdamw>();
 }  // namespace ttnn
