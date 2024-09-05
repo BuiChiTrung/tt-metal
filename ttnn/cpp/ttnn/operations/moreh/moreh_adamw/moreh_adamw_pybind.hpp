@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
+// SPDX-FileCopyrightText: © 2024 Tenstorrent Inc.
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -16,22 +16,6 @@ namespace py = pybind11;
 namespace ttnn::operations::adamw {
 
 void bind_moreh_adamw_operation(py::module& module) {
-    // bind_registered_operation(
-    //     module,
-    //     ttnn::prim::adamw,
-    //     R"doc(example(input_tensor: ttnn.Tensor) -> ttnn.Tensor)doc",
-
-    //     // Add pybind overloads for the C++ APIs that should be exposed to python
-    //     // There should be no logic here, just a call to `self` with the correct arguments
-    //     // The overload with `queue_id` argument will be added automatically for primitive operations
-    //     // This specific function can be called from python as `ttnn.prim.example(input_tensor)` or
-    //     // `ttnn.prim.example(input_tensor, queue_id=queue_id)`
-    //     ttnn::pybind_overload_t{
-    //         [](const decltype(ttnn::prim::adamw)& self, const ttnn::Tensor& input_tensor) -> ttnn::Tensor {
-    //             return self(input_tensor);
-    //         },
-    //         py::arg("input_tensor")});
-
     bind_registered_operation(
         module,
         ttnn::adamw,
@@ -61,7 +45,6 @@ void bind_moreh_adamw_operation(py::module& module) {
                const std::optional<const Tensor> exp_avg_out,
                const std::optional<const Tensor> exp_avg_sq_out,
                const std::optional<const Tensor> max_exp_avg_sq_out,
-               // CHECK if memconfg, compute kernel config require
                const MemoryConfig& mem_config,
                std::optional<const DeviceComputeKernelConfig> compute_kernel_config) {
                 return self(

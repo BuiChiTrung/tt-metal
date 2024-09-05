@@ -152,9 +152,6 @@ def run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, 
     logger.debug(f"Output pcc={out}")
     whole_passing &= passing
 
-    print("CPU: ", model.weight)
-    print("NPU: ", param_result)
-
     passing, out = comp_allclose_and_pcc(cpu_exp_avg_result, exp_avg_result, pcc=pcc, rtol=rtol, atol=atol)
     logger.debug(f"Out passing (exp_avg)={passing}")
     logger.debug(f"Output pcc={out}")

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: © 2023 Tenstorrent Inc.
+// SPDX-FileCopyrightText: © 2024 Tenstorrent Inc.
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -27,7 +27,7 @@ MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation
     uint32_t step = operation_attributes.step;
     bool amsgrad = operation_attributes.amsgrad;
 
-    uint32_t num_units = param_in.volume() / TILE_HW;
+    uint32_t num_units = param_in.volume() / tt::constants::TILE_HW;
 
     const std::optional<const Tensor> max_exp_avg_sq_in = tensor_args.max_exp_avg_sq_in;
     const Tensor& param_out = tensor_return_value.at(0);
