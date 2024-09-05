@@ -6,7 +6,7 @@
 #include "ttnn/deprecated/tt_dnn/op_library/moreh_helper_functions.hpp"
 #include "ttnn/deprecated/tt_dnn/op_library/work_split.hpp"
 
-namespace ttnn::operations::adamw {
+namespace ttnn::operations::moreh::moreh_adamw {
 MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation::MultiCore::create(
     const operation_attributes_t& operation_attributes,
     const tensor_args_t& tensor_args,
@@ -272,4 +272,4 @@ void MorehAdamWDeviceOperation::MultiCore::override_runtime_arguments(
     }
 }
 
-}  // namespace ttnn::operations::adamw
+}  // namespace ttnn::operations::moreh::moreh_adamw

@@ -13,7 +13,7 @@
 #include "ttnn/tensor/tensor.hpp"
 #include "ttnn/types.hpp"
 
-namespace ttnn::operations::adamw {
+namespace ttnn::operations::moreh::moreh_adamw {
 
 struct MorehAdamWDeviceOperation {
     // Define the operation attributes. This is it to store all variables needed by operations that aren't tensors
@@ -149,6 +149,6 @@ struct MorehAdamWDeviceOperation {
 // Register the operation with the ttnn::register_operation API to make it available to the user as
 // ttnn::prim::adamw
 namespace ttnn::prim {
-constexpr auto adamw =
-    ttnn::register_operation<"ttnn::prim::adamw", ttnn::operations::adamw::MorehAdamWDeviceOperation>();
+constexpr auto moreh_adamw =
+    ttnn::register_operation<"ttnn::prim::moreh_adamw", ttnn::operations::moreh::moreh_adamw::MorehAdamWDeviceOperation>();
 }  // namespace ttnn::prim

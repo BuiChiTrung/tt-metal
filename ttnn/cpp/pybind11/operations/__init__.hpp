@@ -48,8 +48,8 @@ namespace ttnn {
 namespace operations {
 
 void py_module(py::module& module) {
-    auto m_adamw = module.def_submodule("adamw", "adamw of operations");
-    adamw::py_module(m_adamw);
+    auto m_moreh_adamw = module.def_submodule("moreh_adamw", "moreh adamw operations");
+    moreh::moreh_adamw::py_module(m_moreh_adamw);
 
     auto m_core = module.def_submodule("core", "core operations");
     core::py_module_types(m_core);

@@ -6,7 +6,7 @@
 
 #include "tt_dnn/op_library/moreh_helper_functions.hpp"
 
-namespace ttnn::operations::adamw {
+namespace ttnn::operations::moreh::moreh_adamw {
 
 MorehAdamWDeviceOperation::program_factory_t MorehAdamWDeviceOperation::select_program_factory(
     const operation_attributes_t& operation_attributes, const tensor_args_t& tensor_args) {
@@ -131,4 +131,4 @@ MorehAdamWDeviceOperation::invoke(
             max_exp_avg_sq_out}};
 }
 
-}  // namespace ttnn::operations::adamw
+}  // namespace ttnn::operations::moreh::moreh_adamw

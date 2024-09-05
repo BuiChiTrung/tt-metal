@@ -6,7 +6,7 @@
 
 #include "device/moreh_adamw_device_operation.hpp"
 
-namespace ttnn::operations::adamw {
+namespace ttnn::operations::moreh::moreh_adamw {
 
 // A composite operation is an operation that calls multiple operations in sequence
 // It is written using invoke and can be used to call multiple primitive and/or composite operations
@@ -34,7 +34,7 @@ struct MorehAdamw {
         const std::optional<const Tensor> max_exp_avg_sq_out,
         const MemoryConfig& mem_config,
         std::optional<const DeviceComputeKernelConfig> compute_kernel_config) {
-        return ttnn::prim::adamw(
+        return ttnn::prim::moreh_adamw(
             param_in,
             grad,
             exp_avg_in,
@@ -56,8 +56,8 @@ struct MorehAdamw {
     }
 };
 
-}  // namespace ttnn::operations::adamw
+}  // namespace ttnn::operations::moreh::moreh_adamw
 
 namespace ttnn {
-constexpr auto adamw = ttnn::register_operation<"ttnn::adamw", operations::adamw::MorehAdamw>();
+constexpr auto moreh_adamw = ttnn::register_operation<"ttnn::moreh_adamw", operations::moreh::moreh_adamw::MorehAdamw>();
 }  // namespace ttnn

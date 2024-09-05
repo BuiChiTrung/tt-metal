@@ -13,20 +13,20 @@
 
 namespace py = pybind11;
 
-namespace ttnn::operations::adamw {
+namespace ttnn::operations::moreh::moreh_adamw {
 
 void bind_moreh_adamw_operation(py::module& module) {
     bind_registered_operation(
         module,
-        ttnn::adamw,
-        R"doc(adamw(param_in: ttnn.Tensor) -> ttnn.Tensor)doc",
+        ttnn::moreh_adamw,
+        R"doc(moreh_adamw(param_in: ttnn.Tensor) -> ttnn.Tensor)doc",
         // Add pybind overloads for the C++ APIs that should be exposed to python
         // There should be no logic here, just a call to `self` with the correct arguments
         // The overload with `queue_id` argument will be added automatically for primitive operations
         // This specific function can be called from python as `ttnn.prim.adamw(param_in)` or
         // `ttnn.prim.adamw(param_in, queue_id=queue_id)`
         ttnn::pybind_overload_t{
-            [](const decltype(ttnn::adamw)& self,
+            [](const decltype(ttnn::moreh_adamw)& self,
                const Tensor& param_in,
                const Tensor& grad,
                const Tensor& exp_avg_in,
@@ -91,4 +91,4 @@ void bind_moreh_adamw_operation(py::module& module) {
 
 void py_module(py::module& module) { bind_moreh_adamw_operation(module); }
 
-}  // namespace ttnn::operations::adamw
+}  // namespace ttnn::operations::moreh::moreh_adamw
