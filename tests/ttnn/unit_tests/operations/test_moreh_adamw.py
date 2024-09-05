@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 import ttnn
-import ttnn
+
 import pytest
 from models.utility_functions import (
     skip_for_wormhole_b0,
@@ -205,13 +205,10 @@ def test_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device)
 @pytest.mark.parametrize("weight_decay", [0.3])
 @pytest.mark.parametrize("amsgrad", [True, False])
 @pytest.mark.parametrize("step", [8])
-@pytest.mark.parametrize("compute_kernel_options", compute_kernel_options, ids=compute_kernel_ids)
-def test_moreh_adamw_callback(
-    shape, lr, betas, eps, weight_decay, amsgrad, step, device, use_program_cache, compute_kernel_options
-):
+def test_moreh_adamw_callback(shape, lr, betas, eps, weight_decay, amsgrad, step, device, use_program_cache):
     torch.manual_seed(0)
     for _ in range(2):
-        run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device, compute_kernel_options)
+        run_moreh_adamw(shape, lr, betas, eps, weight_decay, amsgrad, step, device)
 
 
 @pytest.mark.parametrize(
@@ -224,6 +221,7 @@ def test_moreh_adamw_callback(
 @pytest.mark.parametrize("weight_decay", [0.3])
 @pytest.mark.parametrize("amsgrad", [True, False])
 @pytest.mark.parametrize("step", [8])
+@pytest.mark.parametrize("compute_kernel_options", compute_kernel_options, ids=compute_kernel_ids)
 def test_moreh_adamw_compute_kernel_options(
     shape, lr, betas, eps, weight_decay, amsgrad, step, compute_kernel_options, device
 ):

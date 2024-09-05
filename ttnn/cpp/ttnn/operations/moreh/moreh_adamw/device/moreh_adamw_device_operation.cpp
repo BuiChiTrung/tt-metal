@@ -4,6 +4,8 @@
 
 #include "moreh_adamw_device_operation.hpp"
 
+#include "tt_dnn/op_library/moreh_helper_functions.hpp"
+
 namespace ttnn::operations::adamw {
 
 MorehAdamWDeviceOperation::program_factory_t MorehAdamWDeviceOperation::select_program_factory(
@@ -12,7 +14,31 @@ MorehAdamWDeviceOperation::program_factory_t MorehAdamWDeviceOperation::select_p
 }
 
 void MorehAdamWDeviceOperation::validate_on_program_cache_miss(
-    const operation_attributes_t& attributes, const tensor_args_t& tensor_args) {}
+    const operation_attributes_t& attributes, const tensor_args_t& tensor_args) {
+    tt::operations::primary::check_tensor(tensor_args.param_in, "moreh_adamw", "param_in");
+    tt::operations::primary::check_tensor(tensor_args.grad, "moreh_adamw", "grad");
+    tt::operations::primary::check_tensor(tensor_args.exp_avg_in, "moreh_adamw", "exp_avg_in");
+    tt::operations::primary::check_tensor(tensor_args.exp_avg_sq_in, "moreh_adamw", "exp_avg_sq_in");
+
+    if (tensor_args.max_exp_avg_sq_in.has_value()) {
+        tt::operations::primary::check_tensor(
+            tensor_args.max_exp_avg_sq_in.value(), "moreh_adamw", "max_exp_avg_sq_in");
+    }
+
+    if (tensor_args.param_out.has_value()) {
+        tt::operations::primary::check_tensor(tensor_args.param_out.value(), "moreh_adamw", "param_out");
+    }
+    if (tensor_args.exp_avg_out.has_value()) {
+        tt::operations::primary::check_tensor(tensor_args.exp_avg_out.value(), "moreh_adamw", "exp_avg_out");
+    }
+    if (tensor_args.exp_avg_sq_out.has_value()) {
+        tt::operations::primary::check_tensor(tensor_args.exp_avg_sq_out.value(), "moreh_adamw", "exp_avg_sq_out");
+    }
+    if (tensor_args.max_exp_avg_sq_out.has_value()) {
+        tt::operations::primary::check_tensor(
+            tensor_args.max_exp_avg_sq_out.value(), "moreh_adamw", "max_exp_avg_sq_out");
+    }
+}
 
 void MorehAdamWDeviceOperation::validate_on_program_cache_hit(
     const operation_attributes_t& attributes, const tensor_args_t& tensor_args) {}
@@ -38,15 +64,32 @@ MorehAdamWDeviceOperation::tensor_return_value_t MorehAdamWDeviceOperation::crea
 
     tensor_return_value_t result;
 
-    result.push_back(tensor_args.param_out);
-    result.push_back(tensor_args.exp_avg_out);
-    result.push_back(tensor_args.exp_avg_sq_out);
+    if (tensor_args.param_out.has_value()) {
+        result.push_back(tensor_args.param_out.value());
+    } else {
+        result.push_back(
+            create_device_tensor(output_shapes.at(0), dtype, layout, device, operation_attributes.mem_config));
+    }
+
+    if (tensor_args.exp_avg_out.has_value()) {
+        result.push_back(tensor_args.exp_avg_out.value());
+    } else {
+        result.push_back(
+            create_device_tensor(output_shapes.at(1), dtype, layout, device, operation_attributes.mem_config));
+    }
+
+    if (tensor_args.exp_avg_sq_out.has_value()) {
+        result.push_back(tensor_args.exp_avg_sq_out.value());
+    } else {
+        result.push_back(
+            create_device_tensor(output_shapes.at(2), dtype, layout, device, operation_attributes.mem_config));
+    }
 
     if (tensor_args.max_exp_avg_sq_out.has_value()) {
         result.push_back(tensor_args.max_exp_avg_sq_out.value());
     } else {
         result.push_back(
-            create_device_tensor(output_shapes.at(0), dtype, layout, device, operation_attributes.mem_config));
+            create_device_tensor(output_shapes.at(3), dtype, layout, device, operation_attributes.mem_config));
     }
 
     return std::move(result);
@@ -68,11 +111,10 @@ MorehAdamWDeviceOperation::invoke(
     bool amsgrad,
 
     const std::optional<const Tensor> max_exp_avg_sq_in,
-    const Tensor& param_out,
-    const Tensor& exp_avg_out,
-    const Tensor& exp_avg_sq_out,
+    const std::optional<const Tensor> param_out,
+    const std::optional<const Tensor> exp_avg_out,
+    const std::optional<const Tensor> exp_avg_sq_out,
     const std::optional<const Tensor> max_exp_avg_sq_out,
-    // CHECK if memconfg, compute kernel config require
     const MemoryConfig& mem_config,
     std::optional<const DeviceComputeKernelConfig> compute_kernel_config) {
     return {

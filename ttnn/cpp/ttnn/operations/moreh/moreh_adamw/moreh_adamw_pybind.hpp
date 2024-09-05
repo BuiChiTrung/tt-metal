@@ -57,9 +57,9 @@ void bind_moreh_adamw_operation(py::module& module) {
                bool amsgrad,
 
                const std::optional<const Tensor> max_exp_avg_sq_in,
-               const Tensor& param_out,
-               const Tensor& exp_avg_out,
-               const Tensor& exp_avg_sq_out,
+               const std::optional<const Tensor> param_out,
+               const std::optional<const Tensor> exp_avg_out,
+               const std::optional<const Tensor> exp_avg_sq_out,
                const std::optional<const Tensor> max_exp_avg_sq_out,
                // CHECK if memconfg, compute kernel config require
                const MemoryConfig& mem_config,
@@ -97,9 +97,9 @@ void bind_moreh_adamw_operation(py::module& module) {
             py::arg("amsgrad"),
 
             py::arg("max_exp_avg_sq_in") = std::nullopt,
-            py::arg("param_out"),
-            py::arg("exp_avg_out"),
-            py::arg("exp_avg_sq_out"),
+            py::arg("param_out") = std::nullopt,
+            py::arg("exp_avg_out") = std::nullopt,
+            py::arg("exp_avg_sq_out") = std::nullopt,
             py::arg("max_exp_avg_sq_out") = std::nullopt,
 
             py::arg("mem_config") = operation::DEFAULT_OUTPUT_MEMORY_CONFIG,

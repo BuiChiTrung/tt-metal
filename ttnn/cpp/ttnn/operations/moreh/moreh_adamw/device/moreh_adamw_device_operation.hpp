@@ -8,7 +8,6 @@
 #include <variant>
 
 #include "tt_dnn/op_library/compute_kernel_config.hpp"
-#include "ttnn/core.hpp"
 #include "ttnn/decorators.hpp"
 #include "ttnn/device_operation.hpp"
 #include "ttnn/tensor/tensor.hpp"
@@ -41,9 +40,9 @@ struct MorehAdamWDeviceOperation {
         const Tensor& exp_avg_sq_in;
         const std::optional<const Tensor> max_exp_avg_sq_in;
 
-        const Tensor& param_out;
-        const Tensor& exp_avg_out;
-        const Tensor& exp_avg_sq_out;
+        const std::optional<const Tensor> param_out;
+        const std::optional<const Tensor> exp_avg_out;
+        const std::optional<const Tensor> exp_avg_sq_out;
         const std::optional<const Tensor> max_exp_avg_sq_out;
     };
 
@@ -121,9 +120,9 @@ struct MorehAdamWDeviceOperation {
         bool amsgrad,
 
         const std::optional<const Tensor> max_exp_avg_sq_in,
-        const Tensor& param_out,
-        const Tensor& exp_avg_out,
-        const Tensor& exp_avg_sq_out,
+        const std::optional<const Tensor> param_out,
+        const std::optional<const Tensor> exp_avg_out,
+        const std::optional<const Tensor> exp_avg_sq_out,
         const std::optional<const Tensor> max_exp_avg_sq_out,
         // CHECK if memconfg, compute kernel config require
         const MemoryConfig& mem_config,

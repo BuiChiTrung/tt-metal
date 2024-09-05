@@ -5,7 +5,6 @@
 #include "moreh_adamw_device_operation.hpp"
 #include "ttnn/deprecated/tt_dnn/op_library/moreh_helper_functions.hpp"
 #include "ttnn/deprecated/tt_dnn/op_library/work_split.hpp"
-// #include "ttnn/operations/moreh/moreh_helper_functions.hpp"
 
 namespace ttnn::operations::adamw {
 MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation::MultiCore::create(
@@ -31,10 +30,10 @@ MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation
     uint32_t num_units = param_in.volume() / TILE_HW;
 
     const std::optional<const Tensor> max_exp_avg_sq_in = tensor_args.max_exp_avg_sq_in;
-    const Tensor& param_out = tensor_args.param_out;
-    const Tensor& exp_avg_out = tensor_args.exp_avg_out;
-    const Tensor& exp_avg_sq_out = tensor_args.exp_avg_sq_out;
-    const std::optional<const Tensor> max_exp_avg_sq_out = tensor_args.max_exp_avg_sq_out;
+    const Tensor& param_out = tensor_return_value.at(0);
+    const Tensor& exp_avg_out = tensor_return_value.at(1);
+    const Tensor& exp_avg_sq_out = tensor_return_value.at(2);
+    const Tensor& max_exp_avg_sq_out = tensor_return_value.at(3);
     std::optional<const DeviceComputeKernelConfig> compute_kernel_config = operation_attributes.compute_kernel_config;
 
     Program program{};
@@ -146,18 +145,17 @@ MorehAdamWDeviceOperation::MultiCore::cached_program_t MorehAdamWDeviceOperation
     ////////////////////////////////////////////////////////////////////////////
     //                      RuntimeArgs SetUp
     ////////////////////////////////////////////////////////////////////////////
-    const auto param_in_addr = param_in.buffer()->address();
-    const auto grad_addr = grad.buffer()->address();
-    const auto exp_avg_in_addr = exp_avg_in.buffer()->address();
-    const auto exp_avg_sq_in_addr = exp_avg_sq_in.buffer()->address();
-    const auto max_exp_avg_sq_in_addr =
+    const uint32_t param_in_addr = param_in.buffer()->address();
+    const uint32_t grad_addr = grad.buffer()->address();
+    const uint32_t exp_avg_in_addr = exp_avg_in.buffer()->address();
+    const uint32_t exp_avg_sq_in_addr = exp_avg_sq_in.buffer()->address();
+    const uint32_t max_exp_avg_sq_in_addr =
         max_exp_avg_sq_in.has_value() ? max_exp_avg_sq_in.value().buffer()->address() : 0;
 
-    const auto param_out_addr = param_out.buffer()->address();
-    const auto exp_avg_out_addr = exp_avg_out.buffer()->address();
-    const auto exp_avg_sq_out_addr = exp_avg_sq_out.buffer()->address();
-    const auto max_exp_avg_sq_out_addr =
-        max_exp_avg_sq_out.has_value() ? max_exp_avg_sq_out.value().buffer()->address() : 0;
+    const uint32_t param_out_addr = param_out.buffer()->address();
+    const uint32_t exp_avg_out_addr = exp_avg_out.buffer()->address();
+    const uint32_t exp_avg_sq_out_addr = exp_avg_sq_out.buffer()->address();
+    const uint32_t max_exp_avg_sq_out_addr = max_exp_avg_sq_out.buffer()->address();
 
     union {
         float f;
@@ -235,31 +233,43 @@ void MorehAdamWDeviceOperation::MultiCore::override_runtime_arguments(
     const operation_attributes_t& operation_attributes,
     const tensor_args_t& tensor_args,
     tensor_return_value_t& tensor_return_value) {
-    // auto& program = cached_program.program;
-    // auto& unary_reader_kernel_id = cached_program.shared_variables.unary_reader_kernel_id;
-    // auto& unary_writer_kernel_id = cached_program.shared_variables.unary_writer_kernel_id;
-    // auto& num_cores = cached_program.shared_variables.num_cores;
-    // auto& num_cores_y = cached_program.shared_variables.num_cores_y;
+    auto& program = cached_program.program;
+    auto& unary_reader_kernel_id = cached_program.shared_variables.unary_reader_kernel_id;
+    auto& unary_writer_kernel_id = cached_program.shared_variables.unary_writer_kernel_id;
+    auto& num_cores = cached_program.shared_variables.num_cores;
+    auto& num_cores_y = cached_program.shared_variables.num_cores_y;
 
-    // const auto& input_tensor = tensor_args.input_tensor;
-    // auto& output_tensor = tensor_return_value;
+    const uint32_t param_in_addr = tensor_args.param_in.buffer()->address();
+    const uint32_t grad_addr = tensor_args.grad.buffer()->address();
+    const uint32_t exp_avg_in_addr = tensor_args.exp_avg_in.buffer()->address();
+    const uint32_t exp_avg_sq_in_addr = tensor_args.exp_avg_sq_in.buffer()->address();
+    const uint32_t max_exp_avg_sq_in_addr =
+        tensor_args.max_exp_avg_sq_in.has_value() ? tensor_args.max_exp_avg_sq_in.value().buffer()->address() : 0;
 
-    // auto src_buffer = input_tensor.buffer();
-    // auto dst_buffer = output_tensor.buffer();
+    const uint32_t param_out_addr = tensor_return_value.at(0).buffer()->address();
+    const uint32_t exp_avg_out_addr = tensor_return_value.at(1).buffer()->address();
+    const uint32_t exp_avg_sq_out_addr = tensor_return_value.at(2).buffer()->address();
+    const uint32_t max_exp_avg_sq_out_addr = tensor_return_value.at(3).buffer()->address();
 
-    // for (uint32_t i = 0, num_tiles_written = 0; i < num_cores; i++) {
-    //     CoreCoord core = {i / num_cores_y, i % num_cores_y};
+    for (uint32_t i = 0; i < num_cores; ++i) {
+        CoreCoord core = {i / num_cores_y, i % num_cores_y};
+        {
+            auto& runtime_args = GetRuntimeArgs(program, unary_reader_kernel_id, core);
+            runtime_args[0] = param_in_addr;
+            runtime_args[1] = grad_addr;
+            runtime_args[2] = exp_avg_in_addr;
+            runtime_args[3] = exp_avg_sq_in_addr;
+            runtime_args[4] = max_exp_avg_sq_in_addr;
+        }
 
-    //     {
-    //         auto& runtime_args = GetRuntimeArgs(program, unary_reader_kernel_id, core);
-    //         runtime_args[0] = src_buffer->address();
-    //     }
-
-    //     {
-    //         auto& runtime_args = GetRuntimeArgs(program, unary_writer_kernel_id, core);
-    //         runtime_args[0] = dst_buffer->address();
-    //     }
-    // }
+        {
+            auto& runtime_args = GetRuntimeArgs(program, unary_writer_kernel_id, core);
+            runtime_args[0] = param_out_addr;
+            runtime_args[1] = exp_avg_out_addr;
+            runtime_args[2] = exp_avg_sq_out_addr;
+            runtime_args[3] = max_exp_avg_sq_out_addr;
+        }
+    }
 }
 
 }  // namespace ttnn::operations::adamw
