@@ -27,7 +27,7 @@ std::vector<float> cpu_add_2_bfp8_tiles(
 std::vector<float> npu_add_2_bfp8_tiles(
     const std::vector<float> &fp32_in0_vec,
     const std::vector<float> &fp32_in1_vec,
-    bool unpack_to_bf16,
+    bool unpack_to_bf16_in_reader_kernel,
     Device *device) {
     std::vector<uint32_t> in0_vec = pack_fp32_vec_as_bfp8_tiles(fp32_in0_vec, true, false);
     std::vector<uint32_t> in1_vec = pack_fp32_vec_as_bfp8_tiles(fp32_in1_vec, true, false);
@@ -94,8 +94,8 @@ std::vector<float> npu_add_2_bfp8_tiles(
             .set_page_size(output_cb_index, bfp8_tile_size);
     CBHandle cb_output = tt_metal::CreateCircularBuffer(program, core, cb_output_config);
 
-    constexpr int loop_count = 100;
-    std::map<string, string> kernel_defines = {{"LOOP_COUNT", std::to_string(loop_count)}};
+    constexpr int kernel_loop_count = 1;
+    std::map<string, string> kernel_defines = {{"LOOP_COUNT", std::to_string(kernel_loop_count)}};
 
     /* Specify data movement kernels for reading/writing data to/from DRAM */
     KernelHandle binary_reader_kernel_id = CreateKernel(
@@ -142,13 +142,29 @@ std::vector<float> npu_add_2_bfp8_tiles(
          in0_dram_noc_y,
          in1_dram_noc_x,
          in1_dram_noc_y,
-         unpack_to_bf16});
-    SetRuntimeArgs(program, eltwise_binary_kernel_id, core, {unpack_to_bf16});
+         unpack_to_bf16_in_reader_kernel});
+    SetRuntimeArgs(program, eltwise_binary_kernel_id, core, {unpack_to_bf16_in_reader_kernel});
     SetRuntimeArgs(program, unary_writer_kernel_id, core, {dst_dram_buffer->address(), dst_dram_noc_x, dst_dram_noc_y});
 
-    EnqueueProgram(cq, program, false);
-    Finish(cq);
+    // Benchmark in host
+    double total_time = 0;
+    const int host_loop_count =
+        PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT / kernel_loop_count;
+    for (int i = 0; i < host_loop_count; i++) {
+        auto start = std::chrono::high_resolution_clock::now();
+        EnqueueProgram(cq, program, true);
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        // std::cout << "Iteration " << i << " took " << elapsed.count() * 1000 << " milliseconds." << std::endl;
+        if (i > 0) {  // Skip the first iteration for warm-up
+            total_time += elapsed.count();
+        }
+    }
+    double avg_time = total_time / (host_loop_count - 1);
+    std::cout << "Unpack to bf16 in reader kernel: " << unpack_to_bf16_in_reader_kernel << std::endl;
+    std::cout << "Average time: " << avg_time * 1000 << " milliseconds." << std::endl;
 
+    Finish(cq);
     /* Read in result into a host vector */
     std::vector<uint32_t> result_vec;
     EnqueueReadBuffer(cq, dst_dram_buffer, result_vec, true);
@@ -175,31 +191,12 @@ int main(int argc, char **argv) {
     Device *device = CreateDevice(0);
     std::vector<float> fp32_in0_vec = generate_random_float_vector(1024, 0, 8);
     std::vector<float> fp32_in1_vec = generate_random_float_vector(1024, 8, 32);
-    bool unpack_to_bf16 = true;
     std::vector<float> npu_fp32_vec;
-    npu_fp32_vec = npu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec, unpack_to_bf16, device);
-
-    // // Benchmark
-    // const int loop_count = 10;
-    // double total_time = 0;
-    // for (int i = 0; i <= loop_count; ++i) {
-    //     auto start = std::chrono::high_resolution_clock::now();
-    //     npu_fp32_vec = npu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec, unpack_to_bf16, device);
-    //     auto end = std::chrono::high_resolution_clock::now();
-    //     std::chrono::duration<double> elapsed = end - start;
-    //     std::cout << "Iteration " << i << " took " << elapsed.count() * 1000 << " milliseconds." << std::endl;
-    //     if (i > 0) {  // Skip the first iteration for warm-up
-    //         total_time += elapsed.count();
-    //     }
-    // }
-    // double avg_time = total_time / loop_count;
-    // std::cout << "Unpack to bf16: " << unpack_to_bf16 << std::endl;
-    // std::cout << "Average time over " << loop_count << " iterations: " << avg_time * 1000 << " milliseconds."
-    //           << std::endl;
+    npu_fp32_vec = npu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec, true, device);
 
     // Verify with CPU
     std::vector<float> cpu_fp32_vec = cpu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec);
-    bool allclose = true;
+    bool allclose = false;
     float rtol = 1e-01;  // relative tolerance
     float atol = 1e-03;  // absolute tolerance
 
