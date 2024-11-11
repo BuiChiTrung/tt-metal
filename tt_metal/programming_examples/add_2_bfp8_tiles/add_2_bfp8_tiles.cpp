@@ -27,8 +27,8 @@ std::vector<float> cpu_add_2_bfp8_tiles(
 std::vector<float> npu_add_2_bfp8_tiles(
     const std::vector<float> &fp32_in0_vec,
     const std::vector<float> &fp32_in1_vec,
-    bool unpack_to_bf16_in_reader_kernel,
-    Device *device) {
+    bool unpack_to_bf16_in_reader_kernel) {
+    Device *device = CreateDevice(0);
     std::vector<uint32_t> in0_vec = pack_fp32_vec_as_bfp8_tiles(fp32_in0_vec, true, false);
     std::vector<uint32_t> in1_vec = pack_fp32_vec_as_bfp8_tiles(fp32_in1_vec, true, false);
 
@@ -169,8 +169,10 @@ std::vector<float> npu_add_2_bfp8_tiles(
     std::vector<uint32_t> result_vec;
     EnqueueReadBuffer(cq, dst_dram_buffer, result_vec, true);
 
-    std::vector<float> float_vec = unpack_bfp8_tiles_into_float_vec(result_vec, true, false);
+    tt_metal::detail::DumpDeviceProfileResults(device);
+    CloseDevice(device);
 
+    std::vector<float> float_vec = unpack_bfp8_tiles_into_float_vec(result_vec, true, false);
     return float_vec;
 }
 
@@ -188,15 +190,14 @@ std::vector<float> generate_random_float_vector(size_t size, float min_value, fl
 }
 
 int main(int argc, char **argv) {
-    Device *device = CreateDevice(0);
     std::vector<float> fp32_in0_vec = generate_random_float_vector(1024, 0, 8);
     std::vector<float> fp32_in1_vec = generate_random_float_vector(1024, 8, 32);
     std::vector<float> npu_fp32_vec;
-    npu_fp32_vec = npu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec, true, device);
+    npu_fp32_vec = npu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec, true);
 
     // Verify with CPU
     std::vector<float> cpu_fp32_vec = cpu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec);
-    bool allclose = false;
+    bool allclose = true;
     float rtol = 1e-01;  // relative tolerance
     float atol = 1e-03;  // absolute tolerance
 
@@ -212,7 +213,4 @@ int main(int argc, char **argv) {
     } else {
         std::cout << "CPU and NPU results differ." << std::endl;
     }
-
-    tt_metal::detail::DumpDeviceProfileResults(device);
-    CloseDevice(device);
 }
