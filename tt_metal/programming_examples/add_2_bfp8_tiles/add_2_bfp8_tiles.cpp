@@ -148,8 +148,9 @@ std::vector<float> npu_add_2_bfp8_tiles(
 
     // Benchmark in host
     double total_time = 0;
-    const int host_loop_count =
+    int host_loop_count =
         PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT / kernel_loop_count;
+    host_loop_count = 1;
     for (int i = 0; i < host_loop_count; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         EnqueueProgram(cq, program, true);
@@ -190,7 +191,10 @@ std::vector<float> generate_random_float_vector(size_t size, float min_value, fl
 }
 
 int main(int argc, char **argv) {
-    std::vector<float> fp32_in0_vec = generate_random_float_vector(1024, 0, 8);
+    std::vector<float> fp32_in0_vec = generate_random_float_vector(1024, 1, 2);
+    for (size_t i = 0; i < 1024; ++i) {
+        std::cout << fp32_in0_vec[i] << " ";
+    }
     std::vector<float> fp32_in1_vec = generate_random_float_vector(1024, 8, 32);
     std::vector<float> npu_fp32_vec;
     npu_fp32_vec = npu_add_2_bfp8_tiles(fp32_in0_vec, fp32_in1_vec, true);

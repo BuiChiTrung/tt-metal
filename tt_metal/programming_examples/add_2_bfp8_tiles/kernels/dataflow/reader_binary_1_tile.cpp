@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "dataflow_api.h"
-// #include "debug/dprint.h"
+#include "debug/dprint.h"
 #include "tools/profiler/kernel_profiler.hpp"
 
 void kernel_main() {
@@ -85,7 +85,8 @@ void kernel_main() {
                             bf16 |= (sign << 15);
                         }
 
-                        // DPRINT << BF16(bf16) << " ";
+                        if (i == 0)
+                            DPRINT << BF16(bf16) << " ";
                         *intermed_addr = bf16;
                         intermed_addr++;
                     }

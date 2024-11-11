@@ -1,5 +1,6 @@
 set(PROGRAMMING_EXAMPLES_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/add_2_bfp8_tiles/add_2_bfp8_tiles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/unpack_bfp8_tile/unpack_bfp8_tile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/add_2_integers_in_compute/add_2_integers_in_compute.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/add_2_integers_in_riscv/add_2_integers_in_riscv.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eltwise_binary/eltwise_binary.cpp
