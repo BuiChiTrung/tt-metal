@@ -17,6 +17,7 @@ void kernel_main() {
         uint32_t src_dram_noc_x = get_arg_val<uint32_t>(1);
         uint32_t src_dram_noc_y = get_arg_val<uint32_t>(2);
         bool unpack_to_bf16 = get_arg_val<uint32_t>(3) > 0 ? true : false;
+        bool verify_mode = get_arg_val<uint32_t>(4) == 0 ? true : false;
 
         uint64_t src_noc_addr = get_noc_addr(src_dram_noc_x, src_dram_noc_y, src_addr);
 
@@ -28,8 +29,10 @@ void kernel_main() {
         cb_reserve_back(cb_id_in, 1);
 
         uint32_t l1_write_addr_in = get_write_ptr(cb_id_in);
-        noc_async_read(src_noc_addr, l1_write_addr_in, get_tile_size(cb_id_in));
-        noc_async_read_barrier();
+        if (verify_mode) {
+            noc_async_read(src_noc_addr, l1_write_addr_in, get_tile_size(cb_id_in));
+            noc_async_read_barrier();
+        }
 
         if (unpack_to_bf16) {
             cb_reserve_back(cb_id_out, 1);

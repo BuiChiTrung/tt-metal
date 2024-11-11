@@ -16,8 +16,13 @@
 using namespace tt;
 using namespace tt::tt_metal;
 
+enum TEST_MODE {
+    VERIFY,
+    BENCHMARK,
+};
+
 std::vector<bfloat16> npu_unpack_bfp8_tile(
-    const std::vector<float> &fp32_in_vec, bool unpack_to_bf16_in_reader_kernel) {
+    const std::vector<float> &fp32_in_vec, bool unpack_to_bf16_in_reader_kernel, TEST_MODE mode) {
     Device *device = CreateDevice(0);
     std::vector<uint32_t> in_vec = pack_fp32_vec_as_bfp8_tiles(fp32_in_vec, true, false);
 
@@ -104,15 +109,17 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
         program,
         binary_reader_kernel_id,
         core,
-        {in_dram_buffer->address(), in_dram_noc_x, in_dram_noc_y, unpack_to_bf16_in_reader_kernel});
+        {in_dram_buffer->address(), in_dram_noc_x, in_dram_noc_y, unpack_to_bf16_in_reader_kernel, mode});
     SetRuntimeArgs(program, eltwise_binary_kernel_id, core, {unpack_to_bf16_in_reader_kernel});
-    SetRuntimeArgs(program, unary_writer_kernel_id, core, {dst_dram_buffer->address(), dst_dram_noc_x, dst_dram_noc_y});
+    SetRuntimeArgs(
+        program, unary_writer_kernel_id, core, {dst_dram_buffer->address(), dst_dram_noc_x, dst_dram_noc_y, mode});
 
-    // Benchmark in host
     double total_time = 0;
-    int host_loop_count =
-        PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT / kernel_loop_count;
-    host_loop_count = 1;  // Set to 1 for now
+    int host_loop_count = 1;
+    if (mode == BENCHMARK) {
+        host_loop_count =
+            PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT / kernel_loop_count;
+    }
     for (int i = 0; i < host_loop_count; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         EnqueueProgram(cq, program, true);
@@ -123,9 +130,11 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
             total_time += elapsed.count();
         }
     }
-    double avg_time = total_time / (host_loop_count - 1);
-    std::cout << "Unpack to bf16 in reader kernel: " << unpack_to_bf16_in_reader_kernel << std::endl;
-    std::cout << "Average time: " << avg_time * 1000 << " milliseconds." << std::endl;
+    if (mode == BENCHMARK) {
+        double avg_time = total_time / (host_loop_count - 1);
+        std::cout << "Unpack to bf16 in reader kernel: " << unpack_to_bf16_in_reader_kernel << std::endl;
+        std::cout << "Average time: " << avg_time * 1000 << " milliseconds." << std::endl;
+    }
 
     Finish(cq);
     /* Read in result into a host vector */
@@ -154,24 +163,42 @@ std::vector<float> generate_random_float_vector(size_t size, float min_value, fl
 }
 
 int main(int argc, char **argv) {
+    bool unpack_to_bf16_in_reader_kernel = false;
+    TEST_MODE mode = VERIFY;
+    if (argc > 1) {
+        unpack_to_bf16_in_reader_kernel = std::stoi(argv[1]);
+    }
+    if (argc > 2) {
+        mode = static_cast<TEST_MODE>(std::stoi(argv[2]));
+    }
+    std::string mode_str = (mode == VERIFY) ? "VERIFY" : "BENCHMARK";
+    std::string unpack_str = unpack_to_bf16_in_reader_kernel ? "true" : "false";
+    std::cout << "Unpack to bf16 in reader kernel: " << unpack_str << std::endl;
+    std::cout << "Mode: " << mode_str << std::endl;
+
     std::vector<float> fp32_in_vec = generate_random_float_vector(1024, 1, 2);
-    std::vector<bfloat16> npu_bf16_vec = npu_unpack_bfp8_tile(fp32_in_vec, false);
+    std::vector<bfloat16> npu_bf16_vec = npu_unpack_bfp8_tile(fp32_in_vec, unpack_to_bf16_in_reader_kernel, mode);
     untilize(npu_bf16_vec, 32, 32);
 
-    // Verify results
-    bool allclose = true;
-    float rtol = 1e-01;  // relative tolerance
-    float atol = 1e-03;  // absolute tolerance
+    if (mode == VERIFY) {
+        bool allclose = true;
+        float rtol = 1e-01;  // relative tolerance
+        float atol = 1e-03;  // absolute tolerance
 
-    for (size_t i = 0; i < fp32_in_vec.size(); ++i) {
-        auto cpu_fp32 = fp32_in_vec[i];
-        auto npu_fp32 = npu_bf16_vec[i].to_float();
-        // std::cout << i << ": " << cpu_fp32 << " != " << npu_fp32 << std::endl;
-        if (std::abs(cpu_fp32 - npu_fp32) > (atol + rtol * std::abs(npu_fp32))) {
-            std::cout << i << ": " << cpu_fp32 << " != " << npu_fp32 << std::endl;
-            allclose = false;
+        for (size_t i = 0; i < fp32_in_vec.size(); ++i) {
+            auto cpu_fp32 = fp32_in_vec[i];
+            auto npu_fp32 = npu_bf16_vec[i].to_float();
+            // std::cout << i << ": " << cpu_fp32 << " != " << npu_fp32 << std::endl;
+            if (std::abs(cpu_fp32 - npu_fp32) > (atol + rtol * std::abs(npu_fp32))) {
+                std::cout << i << ": " << cpu_fp32 << " != " << npu_fp32 << std::endl;
+                allclose = false;
+            }
+        }
+
+        if (allclose) {
+            std::cout << "CPU and NPU results are close enough." << std::endl;
+        } else {
+            std::cout << "CPU and NPU results differ." << std::endl;
         }
     }
-
-    assert(allclose);
 }

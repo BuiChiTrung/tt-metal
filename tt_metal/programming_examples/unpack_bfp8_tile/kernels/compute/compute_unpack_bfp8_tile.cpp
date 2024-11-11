@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "compute_kernel_api/eltwise_binary.h"
+#include "compute_kernel_api/eltwise_unary/eltwise_unary.h"
 #include "tools/profiler/kernel_profiler.hpp"
 
 namespace NAMESPACE {
@@ -27,7 +28,6 @@ void MAIN {
         cb_reserve_back(cb_out_id, 1);
 
         tile_regs_acquire();  // acquire 8 tile registers
-        // copy_tile(cb_in_id, 0, 0);
         add_tiles(cb_in_id, cb_in1_id, 0, 0, 0);
         tile_regs_commit();  // signal the packer
 
