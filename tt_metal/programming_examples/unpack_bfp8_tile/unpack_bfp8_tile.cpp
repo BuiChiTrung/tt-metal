@@ -71,23 +71,18 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
             .set_page_size(out_cb_index, bf16_tile_size);
     CBHandle cb_out = tt_metal::CreateCircularBuffer(program, core, cb_out_config);
 
-    constexpr int kernel_loop_count = 1;
-    std::map<string, string> kernel_defines = {{"LOOP_COUNT", std::to_string(kernel_loop_count)}};
-
     /* Specify data movement kernels for reading/writing data to/from DRAM */
     KernelHandle binary_reader_kernel_id = CreateKernel(
         program,
         "tt_metal/programming_examples/unpack_bfp8_tile/kernels/dataflow/reader_unpack_bfp8_tile.cpp",
         core,
-        DataMovementConfig{
-            .processor = DataMovementProcessor::RISCV_1, .noc = NOC::RISCV_1_default, .defines = kernel_defines});
+        DataMovementConfig{.processor = DataMovementProcessor::RISCV_1, .noc = NOC::RISCV_1_default});
 
     KernelHandle unary_writer_kernel_id = CreateKernel(
         program,
         "tt_metal/programming_examples/unpack_bfp8_tile/kernels/dataflow/writer_unpack_bfp8_tile.cpp",
         core,
-        DataMovementConfig{
-            .processor = DataMovementProcessor::RISCV_0, .noc = NOC::RISCV_0_default, .defines = kernel_defines});
+        DataMovementConfig{.processor = DataMovementProcessor::RISCV_0, .noc = NOC::RISCV_0_default});
 
     /* Use the add_tiles operation in the compute kernel */
     KernelHandle eltwise_binary_kernel_id = CreateKernel(
@@ -99,7 +94,6 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
             .fp32_dest_acc_en = false,
             .math_approx_mode = false,
             .compile_args = {},
-            .defines = kernel_defines,
         });
 
     EnqueueWriteBuffer(cq, in_dram_buffer, in_vec, false);
@@ -115,11 +109,7 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
         program, unary_writer_kernel_id, core, {dst_dram_buffer->address(), dst_dram_noc_x, dst_dram_noc_y, mode});
 
     double total_time = 0;
-    int host_loop_count = 1;
-    if (mode == BENCHMARK) {
-        host_loop_count =
-            PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT / kernel_loop_count;
-    }
+    int host_loop_count = PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT;
     for (int i = 0; i < host_loop_count; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         EnqueueProgram(cq, program, true);
@@ -130,11 +120,8 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
             total_time += elapsed.count();
         }
     }
-    if (mode == BENCHMARK) {
-        double avg_time = total_time / (host_loop_count - 1);
-        std::cout << "Unpack to bf16 in reader kernel: " << unpack_to_bf16_in_reader_kernel << std::endl;
-        std::cout << "Average time: " << avg_time * 1000 << " milliseconds." << std::endl;
-    }
+    double avg_time = total_time / (host_loop_count - 1);
+    std::cout << "Average time: " << avg_time * 1000 << " milliseconds." << std::endl;
 
     Finish(cq);
     /* Read in result into a host vector */
