@@ -11,6 +11,7 @@ void kernel_main() {
     uint32_t dst_dram_noc_x = get_arg_val<uint32_t>(1);
     uint32_t dst_dram_noc_y = get_arg_val<uint32_t>(2);
     bool verify_mode = get_arg_val<uint32_t>(3) == 0 ? true : false;
+    // Ignore data movement between DRAM and SRAM in benchmark mode.
     if (!verify_mode) {
         return;
     }
