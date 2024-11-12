@@ -17,8 +17,8 @@ using namespace tt;
 using namespace tt::tt_metal;
 
 enum TEST_MODE {
-    VERIFY,
-    BENCHMARK,
+    VERIFY,     // Verify the correctness of the NPU result with CPU
+    BENCHMARK,  // Benchmark the NPU performance, ignore data movement between DRAM and SRAM
 };
 
 std::vector<bfloat16> npu_unpack_bfp8_tile(
@@ -76,13 +76,13 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
         program,
         "tt_metal/programming_examples/unpack_bfp8_tile/kernels/dataflow/reader_unpack_bfp8_tile.cpp",
         core,
-        DataMovementConfig{.processor = DataMovementProcessor::RISCV_1, .noc = NOC::RISCV_1_default});
+        DataMovementConfig{.processor = DataMovementProcessor::RISCV_0, .noc = NOC::RISCV_0_default});
 
     KernelHandle unary_writer_kernel_id = CreateKernel(
         program,
         "tt_metal/programming_examples/unpack_bfp8_tile/kernels/dataflow/writer_unpack_bfp8_tile.cpp",
         core,
-        DataMovementConfig{.processor = DataMovementProcessor::RISCV_0, .noc = NOC::RISCV_0_default});
+        DataMovementConfig{.processor = DataMovementProcessor::RISCV_1, .noc = NOC::RISCV_1_default});
 
     /* Use the add_tiles operation in the compute kernel */
     KernelHandle eltwise_binary_kernel_id = CreateKernel(
@@ -152,12 +152,14 @@ std::vector<float> generate_random_float_vector(size_t size, float min_value, fl
 int main(int argc, char **argv) {
     bool unpack_to_bf16_in_reader_kernel = false;
     TEST_MODE mode = VERIFY;
+    // Allow reading the unpack_to_bf16_in_reader_kernel and mode from command line
     if (argc > 1) {
         unpack_to_bf16_in_reader_kernel = std::stoi(argv[1]);
     }
     if (argc > 2) {
         mode = static_cast<TEST_MODE>(std::stoi(argv[2]));
     }
+
     std::string mode_str = (mode == VERIFY) ? "VERIFY" : "BENCHMARK";
     std::string unpack_str = unpack_to_bf16_in_reader_kernel ? "true" : "false";
     std::cout << "Unpack to bf16 in reader kernel: " << unpack_str << std::endl;
@@ -175,7 +177,6 @@ int main(int argc, char **argv) {
         for (size_t i = 0; i < fp32_in_vec.size(); ++i) {
             auto cpu_fp32 = fp32_in_vec[i];
             auto npu_fp32 = npu_bf16_vec[i].to_float();
-            // std::cout << i << ": " << cpu_fp32 << " != " << npu_fp32 << std::endl;
             if (std::abs(cpu_fp32 - npu_fp32) > (atol + rtol * std::abs(npu_fp32))) {
                 std::cout << i << ": " << cpu_fp32 << " != " << npu_fp32 << std::endl;
                 allclose = false;

@@ -20,23 +20,23 @@ void kernel_main() {
 
     uint64_t src_noc_addr = get_noc_addr(src_dram_noc_x, src_dram_noc_y, src_addr);
 
-    constexpr uint32_t cb_id_in = tt::CB::c_in0;
+    constexpr uint32_t cb_id_in0 = tt::CB::c_in0;
     constexpr uint32_t cb_id_in1 = tt::CB::c_in1;
-    constexpr uint32_t cb_id_out = tt::CB::c_out0;
+    constexpr uint32_t cb_id_out0 = tt::CB::c_out0;
 
-    // single-tile ublocks
-    cb_reserve_back(cb_id_in, 1);
+    cb_reserve_back(cb_id_in0, 1);
 
-    uint32_t l1_write_addr_in = get_write_ptr(cb_id_in);
+    uint32_t l1_write_addr_in = get_write_ptr(cb_id_in0);
+    // Only read the data from DRAM if we are in verify mode. Otherwise, assume the data is already in SRAM.
     if (verify_mode) {
-        noc_async_read(src_noc_addr, l1_write_addr_in, get_tile_size(cb_id_in));
+        noc_async_read(src_noc_addr, l1_write_addr_in, get_tile_size(cb_id_in0));
         noc_async_read_barrier();
     }
 
     if (unpack_to_bf16) {
-        cb_reserve_back(cb_id_out, 1);
+        cb_reserve_back(cb_id_out0, 1);
 
-        uint32_t l1_write_addr_out = get_write_ptr(cb_id_out);
+        uint32_t l1_write_addr_out = get_write_ptr(cb_id_out0);
         auto in_addr = reinterpret_cast<uint8_t *>(l1_write_addr_in);
         auto out_addr = reinterpret_cast<uint16_t *>(l1_write_addr_out);
 
@@ -50,10 +50,12 @@ void kernel_main() {
 
                 uint16_t bf16 = 0;
                 if (mantissa != 0) {
+                    // Shift left mantissa until the 6th bit (hidden bit) is set
                     while ((mantissa & (1 << 6)) == 0) {
                         mantissa <<= 1;
                         exp--;
                     }
+
                     // Do another shift and clear the hidden bit
                     mantissa <<= 1;
                     mantissa &= ~(1 << 7);
@@ -68,15 +70,23 @@ void kernel_main() {
                 out_addr++;
             }
         }
-        cb_push_back(cb_id_out, 1);
+        cb_push_back(cb_id_out0, 1);
     } else {
+        // Fill cb_in1 with zeros and do add_tiles(cb_in0, cb_in1) in the compute kernel.
         cb_reserve_back(cb_id_in1, 1);
         auto in1_addr = reinterpret_cast<uint8_t *>(get_write_ptr(cb_id_in1));
-        for (uint32_t i = 0; i < get_tile_size(cb_id_in); i++) {
+        for (uint32_t i = 0; i < get_tile_size(cb_id_in0); i++) {
             in1_addr[i] = 0;
         }
 
         cb_push_back(cb_id_in1, 1);
-        cb_push_back(cb_id_in, 1);
+        cb_push_back(cb_id_in0, 1);
+    }
+
+    // Mimic the behavior in reality, wait for bfp8 tile unpacked to bf16 tile in CB.
+    if (!verify_mode) {
+        cb_wait_front(cb_id_out0, 1);
+        // Do sth here ...
+        cb_pop_front(cb_id_out0, 1);
     }
 }
