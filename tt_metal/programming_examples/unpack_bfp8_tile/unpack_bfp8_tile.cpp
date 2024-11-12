@@ -22,7 +22,10 @@ enum TEST_MODE {
 };
 
 std::vector<bfloat16> npu_unpack_bfp8_tile(
-    const std::vector<float> &fp32_in_vec, bool unpack_to_bf16_in_reader_kernel, TEST_MODE mode) {
+    const std::vector<float> &fp32_in_vec,
+    bool unpack_to_bf16_in_reader_kernel,
+    TEST_MODE mode,
+    uint32_t unpack_elements) {
     Device *device = CreateDevice(0);
     std::vector<uint32_t> in_vec = pack_fp32_vec_as_bfp8_tiles(fp32_in_vec, true, false);
 
@@ -103,13 +106,18 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
         program,
         binary_reader_kernel_id,
         core,
-        {in_dram_buffer->address(), in_dram_noc_x, in_dram_noc_y, unpack_to_bf16_in_reader_kernel, mode});
+        {in_dram_buffer->address(),
+         in_dram_noc_x,
+         in_dram_noc_y,
+         unpack_to_bf16_in_reader_kernel,
+         mode,
+         unpack_elements});
     SetRuntimeArgs(program, eltwise_binary_kernel_id, core, {unpack_to_bf16_in_reader_kernel});
     SetRuntimeArgs(
         program, unary_writer_kernel_id, core, {dst_dram_buffer->address(), dst_dram_noc_x, dst_dram_noc_y, mode});
 
     double total_time = 0;
-    int host_loop_count = PROFILER_OP_SUPPORT_COUNT * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT;
+    int host_loop_count = 100 * kernel_profiler::PROFILER_L1_GUARANTEED_MARKER_COUNT;
     for (int i = 0; i < host_loop_count; i++) {
         auto start = std::chrono::high_resolution_clock::now();
         EnqueueProgram(cq, program, true);
@@ -150,8 +158,12 @@ std::vector<float> generate_random_float_vector(size_t size, float min_value, fl
 }
 
 int main(int argc, char **argv) {
+    // Choose whether to unpack to bf16 in the reader kernel or UNPACK core
     bool unpack_to_bf16_in_reader_kernel = false;
     TEST_MODE mode = VERIFY;
+    // If we unpack in reader kernel, we can select the number of elements to unpack
+    uint32_t unpack_elements = 1024;
+
     // Allow reading the unpack_to_bf16_in_reader_kernel and mode from command line
     if (argc > 1) {
         unpack_to_bf16_in_reader_kernel = std::stoi(argv[1]);
@@ -159,20 +171,28 @@ int main(int argc, char **argv) {
     if (argc > 2) {
         mode = static_cast<TEST_MODE>(std::stoi(argv[2]));
     }
+    if (argc > 3) {
+        unpack_elements = std::stoi(argv[3]);
+        if (mode == VERIFY) {
+            assert(unpack_elements == 1024);
+        }
+    }
 
     std::string mode_str = (mode == VERIFY) ? "VERIFY" : "BENCHMARK";
     std::string unpack_str = unpack_to_bf16_in_reader_kernel ? "true" : "false";
     std::cout << "Unpack to bf16 in reader kernel: " << unpack_str << std::endl;
+    std::cout << "Unpack elements: " << unpack_elements << std::endl;
     std::cout << "Mode: " << mode_str << std::endl;
 
-    std::vector<float> fp32_in_vec = generate_random_float_vector(1024, 1, 2);
-    std::vector<bfloat16> npu_bf16_vec = npu_unpack_bfp8_tile(fp32_in_vec, unpack_to_bf16_in_reader_kernel, mode);
+    std::vector<float> fp32_in_vec = generate_random_float_vector(1024, 0, 3);
+    std::vector<bfloat16> npu_bf16_vec =
+        npu_unpack_bfp8_tile(fp32_in_vec, unpack_to_bf16_in_reader_kernel, mode, unpack_elements);
     untilize(npu_bf16_vec, 32, 32);
 
     if (mode == VERIFY) {
         bool allclose = true;
-        float rtol = 1e-01;  // relative tolerance
-        float atol = 1e-03;  // absolute tolerance
+        float rtol = 0.01;  // relative tolerance
+        float atol = 0.02;  // absolute tolerance
 
         for (size_t i = 0; i < fp32_in_vec.size(); ++i) {
             auto cpu_fp32 = fp32_in_vec[i];

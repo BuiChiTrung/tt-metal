@@ -1,0 +1,92 @@
+Unpack to bf16 in reader kernel: true
+Unpack elements: 512
+Mode: BENCHMARK
+Average time: 0.0858655 milliseconds.
+=================== device_fw_duration ===================
+       Count          =        400
+     Average [cycles] =     27,841
+         Max [cycles] =     28,833
+      Median [cycles] =     27,570
+         Min [cycles] =     27,517
+         Sum [cycles] = 11,136,358
+       Range [cycles] =      1,316
+
+
+=================== device_kernel_duration ===================
+       Count          =        400
+     Average [cycles] =     27,341
+         Max [cycles] =     28,346
+      Median [cycles] =     27,072
+         Min [cycles] =     27,015
+         Sum [cycles] = 10,936,413
+       Range [cycles] =      1,331
+
+
+=================== device_brisc_kernel_duration ===================
+       Count          =        400
+     Average [cycles] =     26,731
+         Max [cycles] =     27,708
+      Median [cycles] =     26,457
+         Min [cycles] =     26,405
+         Sum [cycles] = 10,692,284
+       Range [cycles] =      1,303
+
+
+=================== device_ncrisc_kernel_duration ===================
+       Count          =        400
+     Average [cycles] =        190
+         Max [cycles] =        198
+      Median [cycles] =        189
+         Min [cycles] =        187
+         Sum [cycles] =     75,817
+       Range [cycles] =         11
+
+
+=================== device_trisc0_kernel_duration ===================
+       Count          =        400
+     Average [cycles] =        213
+         Max [cycles] =        233
+      Median [cycles] =        213
+         Min [cycles] =        206
+         Sum [cycles] =     85,383
+       Range [cycles] =         27
+
+
+=================== device_trisc1_kernel_duration ===================
+       Count          =        400
+     Average [cycles] =        191
+         Max [cycles] =        201
+      Median [cycles] =        191
+         Min [cycles] =        183
+         Sum [cycles] =     76,309
+       Range [cycles] =         18
+
+
+=================== device_trisc2_kernel_duration ===================
+       Count          =        400
+     Average [cycles] =        169
+         Max [cycles] =        179
+      Median [cycles] =        169
+         Min [cycles] =        165
+         Sum [cycles] =     67,551
+       Range [cycles] =         14
+
+
+=================== device_compute_cb_wait_front ===================
+       Count          =        400
+     Average [cycles] =          0
+         Max [cycles] =          0
+      Median [cycles] =          0
+         Min [cycles] =          0
+         Sum [cycles] =          0
+       Range [cycles] =          0
+
+
+=================== device_compute_cb_reserve_back ===================
+       Count          =        400
+     Average [cycles] =          0
+         Max [cycles] =          0
+      Median [cycles] =          0
+         Min [cycles] =          0
+         Sum [cycles] =          0
+       Range [cycles] =          0
