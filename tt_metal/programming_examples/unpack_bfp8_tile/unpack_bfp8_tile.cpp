@@ -62,12 +62,6 @@ std::vector<bfloat16> npu_unpack_bfp8_tile(
             .set_page_size(in_cb_index, bfp8_tile_size);
     CBHandle cb_in = tt_metal::CreateCircularBuffer(program, core, cb_in_config);
 
-    constexpr uint32_t in1_cb_index = CB::c_in1;
-    CircularBufferConfig cb_in1_config =
-        CircularBufferConfig(num_tiles * bfp8_tile_size, {{in1_cb_index, tt::DataFormat::Bfp8_b}})
-            .set_page_size(in1_cb_index, bfp8_tile_size);
-    CBHandle cb_in1 = tt_metal::CreateCircularBuffer(program, core, cb_in1_config);
-
     constexpr uint32_t out_cb_index = CB::c_out0;
     CircularBufferConfig cb_out_config =
         CircularBufferConfig(num_tiles * bf16_tile_size, {{out_cb_index, tt::DataFormat::Float16_b}})

@@ -6,6 +6,7 @@
 
 #include "compute_kernel_api/eltwise_binary.h"
 #include "compute_kernel_api/eltwise_unary/eltwise_unary.h"
+#include "compute_kernel_api/tile_move_copy.h"
 #include "tools/profiler/kernel_profiler.hpp"
 
 namespace NAMESPACE {
@@ -13,21 +14,17 @@ void MAIN {
     DeviceZoneScopedN("UNPACK-BFP8-TILE");
     bool unpack_to_bf16 = get_arg_val<uint32_t>(0) > 0 ? true : false;
     auto cb_id_in0 = tt::CB::c_in0;
-    auto cb_id_in1 = tt::CB::c_in1;
     auto cb_id_out0 = tt::CB::c_out0;
 
     if (unpack_to_bf16) {
         return;
     }
-
-    binary_op_init_common(cb_id_in0, cb_id_in1, cb_id_out0);
-    add_tiles_init();
+    binary_op_init_common(cb_id_in0, cb_id_out0);
 
     cb_wait_front(cb_id_in0, 1);
     tile_regs_acquire();  // acquire 8 tile registers
-    // UNPACK core can only unpack bfp8 from CB to src register, not dst reg. We have to use an binary op here.
-    // cb_id_in1 is filled with zeros.
-    add_tiles(cb_id_in0, cb_id_in1, 0, 0, 0);
+    copy_tile_to_dst_init_short();
+    copy_tile(cb_id_in0, 0, 0);
     tile_regs_commit();  // signal the packer
     cb_pop_front(cb_id_in0, 1);
 
