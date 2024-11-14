@@ -82,13 +82,13 @@ void kernel_main() {
         cb_push_back(cb_id_out0, 1);
     } else {
         // Fill cb_in1 with zeros and do add_tiles(cb_in0, cb_in1) in the compute kernel.
-        cb_reserve_back(cb_id_in1, 1);
-        auto in1_addr = reinterpret_cast<uint8_t *>(get_write_ptr(cb_id_in1));
-        for (uint32_t i = 0; i < get_tile_size(cb_id_in0); i++) {
-            in1_addr[i] = 0;
-        }
+        // cb_reserve_back(cb_id_in1, 1);
+        // auto in1_addr = reinterpret_cast<uint8_t *>(get_write_ptr(cb_id_in1));
+        // for (uint32_t i = 0; i < get_tile_size(cb_id_in0); i++) {
+        //     in1_addr[i] = 0;
+        // }
 
-        cb_push_back(cb_id_in1, 1);
+        // cb_push_back(cb_id_in1, 1);
         cb_push_back(cb_id_in0, 1);
     }
 
