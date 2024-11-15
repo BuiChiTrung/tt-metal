@@ -80,7 +80,6 @@ void kernel_main() {
 
         cb_push_back(cb_id_out0, 1);
     } else {
-        // Fill cb_in1 with zeros and do add_tiles(cb_in0, cb_in1) in the compute kernel.
         cb_push_back(cb_id_in0, 1);
     }
 
